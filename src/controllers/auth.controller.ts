@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../prisma";
 import bcrypt from "bcrypt";
+import { mailer } from "../utils/mailer";
+import crypto from "node:crypto";
+
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 
 // REFRESH TOKENの有効期限（7日）
 const REFRESH_TOKEN_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
@@ -236,5 +240,99 @@ export const signupHandler = async (req: Request, res: Response) => {
       message: "SIGNUP_FAILED",
       error: err instanceof Error ? err.message : err,
     });
+  }
+};
+
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ message: "EMAIL_REQUIRED" });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.json({ message: "RESET_MAIL_SENT_IF_ACCOUNT_EXISTS" });
+    }
+
+    const token = crypto.randomUUID();
+    const expireDate = new Date(Date.now() + 1000 * 60 * 30);
+
+    await prisma.passwordResetToken.upsert({
+      where: { userId: user.id },
+      update: {
+        token,
+        expireDate,
+      },
+      create: {
+        token,
+        expireDate,
+        userId: user.id,
+      },
+    });
+
+    const resetLink = `${process.env.FRONTEND_ORIGIN}/reset-password?token=${token}`;
+
+    await mailer.sendMail({
+      to: email,
+      from: process.env.MAIL_FROM || process.env.MAIL_USER || "noreply@plug.r-e.kr",
+      subject: "Plugのパスワード再設定リンクです。",
+      text: `パスワード再設定リンク：\n${resetLink}`,
+    });
+
+    return res.json({ message: "RESET_MAIL_SENT_IF_ACCOUNT_EXISTS" });
+  } catch (err) {
+    console.error("requestPasswordReset error:", err);
+    return res.status(500).json({ message: "SERVER_ERROR" });
+  }
+};
+
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const token = String(req.body.token || "");
+    const password = String(req.body.password || "");
+
+    if (!token || !password) {
+      return res.status(400).json({ message: "INVALID_REQUEST" });
+    }
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      return res.status(401).json({ message: "INVALID_TOKEN" });
+    }
+
+    if (resetToken.expireDate.getTime() < Date.now()) {
+      await prisma.passwordResetToken.delete({
+        where: { token },
+      });
+
+      return res.status(401).json({ message: "TOKEN_EXPIRED" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      }),
+      prisma.passwordResetToken.delete({
+        where: { token },
+      }),
+    ]);
+
+    return res.json({ message: "PASSWORD_RESET_SUCCESS" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "SERVER_ERROR" });
   }
 };

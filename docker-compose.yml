@@ -1,0 +1,10 @@
+services:
+  task-express:
+    build: .
+    container_name: task-express
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env.production
+    command: sh -c "npx prisma migrate deploy && npm start"

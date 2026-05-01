@@ -1,5 +1,5 @@
 import express from "express";
-import { loginHandler, refreshHandler, logoutHandler, signupHandler } from "../controllers/auth.controller";
+import { loginHandler, refreshHandler, logoutHandler, signupHandler, requestPasswordReset, resetPassword } from "../controllers/auth.controller";
 
 const router = express.Router();
 
@@ -14,5 +14,9 @@ router.post("/logout", logoutHandler);
 
 // 会員登録
 router.post("/signup", signupHandler);
+
+router.post("/find-password", requestPasswordReset);
+
+router.post("/reset-password", resetPassword);
 
 export default router;

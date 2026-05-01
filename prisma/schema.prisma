@@ -10,6 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 //BOARD
@@ -88,14 +89,15 @@ model Image {
 
 //PasswordResetToken
 model PasswordResetToken {
-  id Int @id @default(autoincrement())
-
-  token      String
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
   expireDate DateTime
-
-  userId Int  @unique
-  user   User @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+
 
 //Post
 model Post {
