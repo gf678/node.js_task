@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+//ENV
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//BOARD
+model Board {
+  boardId Int @id @default(autoincrement())
+
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  posts         Post[]
+  members       BoardMember[]
+  subscriptions Subscription[]
+}
+
+//BoardMember
+enum Role {
+  ADMIN
+  MODERATOR
+  USER
+}
+
+model BoardMember {
+  id Int @id @default(autoincrement())
+
+  userId  Int
+  boardId Int
+
+  role Role
+
+  user  User  @relation(fields: [userId], references: [id])
+  board Board @relation(fields: [boardId], references: [boardId])
+
+  @@index([userId])
+  @@index([boardId])
+}
+
+//Comment
+model Comment {
+  commentId Int @id @default(autoincrement())
+
+  postId   Int
+  userId   Int
+  parentId Int?
+
+  content   String  @db.VarChar(1000)
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [postId])
+  user User @relation(fields: [userId], references: [id])
+
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [commentId])
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([userId])
+}
+
+//IMAGE
+model Image {
+  imageId Int @id @default(autoincrement())
+
+  postId Int?
+  userId Int?
+
+  imageUrl  String
+  sortOrder Int?
+
+  createdAt DateTime @default(now())
+
+  post Post? @relation(fields: [postId], references: [postId])
+  user User? @relation(fields: [userId], references: [id])
+}
+
+//PasswordResetToken
+model PasswordResetToken {
+  id Int @id @default(autoincrement())
+
+  token      String
+  expireDate DateTime
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}
+
+//Post
+model Post {
+  postId Int @id @default(autoincrement())
+
+  userId  Int
+  boardId Int
+
+  title   String  @db.VarChar(200)
+  content String? @db.Text
+
+  views    Int @default(0)
+  likes    Int @default(0)
+  dislikes Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  board Board @relation(fields: [boardId], references: [boardId])
+
+  comments  Comment[]
+  reactions PostReaction[]
+  images    Image[]
+
+  files File[] 
+}
+
+//PostReaction
+model PostReaction {
+  id Int @id @default(autoincrement())
+
+  postId Int
+  userId Int
+
+  type      String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+}
+
+//Subscription
+model Subscription {
+  id Int @id @default(autoincrement())
+
+  userId  Int
+  boardId Int
+
+  user  User  @relation(fields: [userId], references: [id])
+  board Board @relation(fields: [boardId], references: [boardId])
+
+  @@unique([userId, boardId])
+  @@index([userId])
+  @@index([boardId])
+}
+
+//User
+model User {
+  id Int @id @default(autoincrement())
+
+  loginId  String @unique @db.VarChar(50)
+  password String @db.VarChar(255)
+  alias    String @unique @db.VarChar(50)
+
+  email String? @unique @db.VarChar(100)
+
+  profileImg String? 
+
+  address String?
+  phone   String?
+
+  createdAt DateTime @default(now())
+
+  role Role
+
+  posts         Post[]
+  comments      Comment[]
+  reactions     PostReaction[]
+  subscriptions Subscription[]
+  boardMembers  BoardMember[]
+  images        Image[]
+
+  refreshTokens RefreshToken[]
+  
+  passwordResetToken PasswordResetToken?
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model File {
+  fileId Int @id @default(autoincrement())
+
+  postId Int
+
+  name String
+  url  String
+
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [postId])
+
+  @@index([postId])
+}
