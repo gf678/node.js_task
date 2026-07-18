@@ -2,7 +2,6 @@ import { Router } from "express";
 import {
   getBoardsHandler,
   getBoardByNameHandler,
-  unlockBoardHandler,
   checkBoardPassword
 } from "../controllers/board.controller";
 
@@ -13,33 +12,27 @@ import { boardAccessMiddleware } from "../middleware/boardAccess.middleware";
 const router = Router();
 
 
-// 掲示板一覧の取得
+// 게시판 목록
 router.get(
   "/",
   getBoardsHandler
 );
 
 
-// 掲示板解除
+// 비밀번호 인증
 router.post(
-  "/:boardName/unlock",
+  "/:boardId/access",
   authMiddleware,
-  unlockBoardHandler
+  checkBoardPassword
 );
 
 
-// 掲示板名による掲示板の取得
+// 게시판 조회
 router.get(
   "/:boardName",
   authMiddleware,
   boardAccessMiddleware,
   getBoardByNameHandler
-);
-
-router.post(
-  "/:boardId/access",
-  authMiddleware,
-  checkBoardPassword
 );
 
 
