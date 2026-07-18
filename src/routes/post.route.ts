@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
+import { boardAccessMiddleware } from "../middleware/boardAccess.middleware";
+
 import {
   createPostHandler,
   getPostsHandler,
@@ -9,27 +11,71 @@ import {
   reactionHandler,
   increasePostView
 } from "../controllers/post.controller";
+
 import multer from "multer";
 
-// Multer設定 - ファイルアップロード用のテンポラリディレクトリを指定
-const upload = multer({ dest: "uploads/tmp" });
+
+// Multer 설정
+const upload = multer({
+  dest: "uploads/tmp"
+});
+
 
 const router = Router();
 
-// 認証が必要なAPI
+
+
+// =====================================
+// 게시글 작성
+// =====================================
 router.post(
   "/:boardName",
   authMiddleware,
+  boardAccessMiddleware,
   upload.array("files"),
   createPostHandler
 );
-// 投稿に対するリアクション（いいね/よくないね）
-router.post("/:postId/reaction", authMiddleware, reactionHandler);
 
-// 投稿の詳細取得
-router.get("/:boardName/:postId", authMiddleware, getPostDetailHandler);
 
-// 投稿の修正
+
+// =====================================
+// 게시글 상세 조회
+// =====================================
+router.get(
+  "/:boardName/:postId",
+  authMiddleware,
+  boardAccessMiddleware,
+  getPostDetailHandler
+);
+
+
+
+// =====================================
+// 게시글 목록 조회
+// =====================================
+router.get(
+  "/:boardName",
+  authMiddleware,
+  boardAccessMiddleware,
+  getPostsHandler
+);
+
+
+
+// =====================================
+// 게시글 추천 / 비추천
+// =====================================
+router.post(
+  "/:postId/reaction",
+  authMiddleware,
+  reactionHandler
+);
+
+
+
+// =====================================
+// 게시글 수정
+// =====================================
 router.put(
   "/:postId",
   authMiddleware,
@@ -37,13 +83,27 @@ router.put(
   updatePostHandler
 );
 
-// 投稿の削除
-router.delete("/:postId", authMiddleware, deletePostHandler);
 
-// 投稿の閲覧数増加
-router.post("/:postId/view", increasePostView);
 
-// 掲示板名による投稿一覧の取得
-router.get("/:boardName", getPostsHandler);
+// =====================================
+// 게시글 삭제
+// =====================================
+router.delete(
+  "/:postId",
+  authMiddleware,
+  deletePostHandler
+);
+
+
+
+// =====================================
+// 조회수 증가
+// =====================================
+router.post(
+  "/:postId/view",
+  increasePostView
+);
+
+
 
 export default router;
