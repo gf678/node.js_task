@@ -24,6 +24,7 @@ export const createComment = async (
 
     const user = req.user;
 
+
     if (!user) {
       return res.status(401).json({
         message:"UNAUTHORIZED"
@@ -31,10 +32,9 @@ export const createComment = async (
     }
 
 
-    let imageUrl = null;
+    let imageUrl: string | null = null;
 
 
-    // 이미지 업로드 처리
     if(req.file){
 
       imageUrl =
@@ -54,7 +54,7 @@ export const createComment = async (
         parentId
           ? Number(parentId)
           : undefined,
-        imageUrl   // ⭐ 추가
+        imageUrl
       );
 
 
@@ -93,13 +93,15 @@ export const updateComment = async (
 
 
     if(!user){
+
       return res.status(401).json({
         message:"UNAUTHORIZED"
       });
+
     }
 
 
-    let imageUrl = null;
+    let imageUrl: string | undefined;
 
 
     if(req.file){

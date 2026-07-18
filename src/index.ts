@@ -33,9 +33,13 @@ app.set("trust proxy", true);
 // アップロード用ディレクトリが存在しない場合は作成します。
 ensureDir(path.resolve("uploads/images"));
 ensureDir(path.resolve("uploads/files"));
+ensureDir(path.resolve("uploads/comments"));
 // 静的ファイル提供のため、アップロードディレクトリをExpressの静的ディレクトリとして設定します。
 // クライアントは /uploads パスを通じてアップロードされた画像やファイルにアクセスできます。
-app.use("/uploads", express.static(path.resolve("uploads")));
+app.use(
+  "/uploads",
+  express.static(path.resolve("uploads"))
+);
 
 // CORS設定を適用し、特定のオリジンからのリクエストを許可します。
 app.use(

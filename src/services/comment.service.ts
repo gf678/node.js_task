@@ -9,28 +9,30 @@ export const createCommentService = async (
   loginId: string,
   role: Role,
   parentId?: number,
-  imageUrl?: string | null   // ⭐ 추가
+  imageUrl?: string | null
 ) => {
 
   const post = await prisma.post.findUnique({
-    where: {
+    where:{
       postId
     }
   });
 
-  if (!post) {
+
+  if(!post){
     throw new Error("POST_NOT_FOUND");
   }
 
 
 
   const user = await prisma.user.findUnique({
-    where: {
+    where:{
       loginId
     }
   });
 
-  if (!user) {
+
+  if(!user){
     throw new Error("USER_NOT_FOUND");
   }
 
@@ -38,7 +40,7 @@ export const createCommentService = async (
 
   return prisma.comment.create({
 
-    data: {
+    data:{
 
       content,
 
@@ -48,9 +50,11 @@ export const createCommentService = async (
 
       parentId: parentId ?? null,
 
-      image: imageUrl ?? null,   // ⭐ 추가
+      ...(imageUrl !== undefined && {
+      image:imageUrl
+      })
 
-    },
+    }
 
   });
 
@@ -64,7 +68,7 @@ export const updateCommentService = async (
   id:number,
   content:string,
   loginId:string,
-  imageUrl?:string | null   // ⭐ 추가
+  imageUrl?:string | null
 ) => {
 
 
@@ -85,7 +89,9 @@ export const updateCommentService = async (
 
   if(!comment){
 
-    throw new Error("COMMENT_NOT_FOUND");
+    throw new Error(
+      "COMMENT_NOT_FOUND"
+    );
 
   }
 
@@ -93,7 +99,9 @@ export const updateCommentService = async (
 
   if(comment.user.loginId !== loginId){
 
-    throw new Error("FORBIDDEN");
+    throw new Error(
+      "FORBIDDEN"
+    );
 
   }
 
@@ -105,10 +113,13 @@ export const updateCommentService = async (
       commentId:id
     },
 
+
     data:{
 
       content,
 
+
+      // 이미지 전달된 경우만 변경
       ...(imageUrl !== undefined && {
         image:imageUrl
       })
@@ -116,7 +127,6 @@ export const updateCommentService = async (
     }
 
   });
-
 
 };
 
@@ -148,7 +158,9 @@ export const deleteCommentService = async (
 
   if(!comment){
 
-    throw new Error("COMMENT_NOT_FOUND");
+    throw new Error(
+      "COMMENT_NOT_FOUND"
+    );
 
   }
 
@@ -167,9 +179,15 @@ export const deleteCommentService = async (
 
 
 
-  if(!isOwner && !isAdmin && !isModerator){
+  if(
+    !isOwner &&
+    !isAdmin &&
+    !isModerator
+  ){
 
-    throw new Error("FORBIDDEN");
+    throw new Error(
+      "FORBIDDEN"
+    );
 
   }
 
@@ -182,7 +200,11 @@ export const deleteCommentService = async (
     },
 
     data:{
-      isDeleted:true
+
+      isDeleted:true,
+
+      content:"削除されたコメントです。"
+
     }
 
   });
