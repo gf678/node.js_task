@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
+import bcrypt from "bcrypt";
 
 /**
  * 管理者ダッシュボード
@@ -23,23 +24,62 @@ export const getAdminDashboard = async (req: Request, res: Response) => {
 // 掲示板作成
 export const createBoard = async (req: Request, res: Response) => {
   try {
-    // リクエストから掲示板名と説明を取得
-    const { name, description } = req.body;
 
-    // 掲示板をデータベースに作成
+    const {
+      name,
+      description,
+      isProtected,
+      password,
+    } = req.body;
+
+
+    // ロック掲示板の場合パスワード必須
+    if (isProtected && !password) {
+      return res.status(400).json({
+        message: "PASSWORD_REQUIRED",
+      });
+    }
+
+
+    let passwordHash = null;
+
+
+    // パスワード暗号化
+    if (isProtected) {
+      passwordHash = await bcrypt.hash(
+        password,
+        10
+      );
+    }
+
+
     const board = await prisma.board.create({
       data: {
         name,
         description,
+
+        isProtected: Boolean(isProtected),
+
+        passwordHash,
+
+        protectedAt: isProtected
+          ? new Date()
+          : null,
       },
     });
 
-    // 作成された掲示板情報を返す
-    return res.json(board);
+
+    return res.status(201).json(board);
+
+
   } catch (err) {
-    // エラーハンドリング
+
     console.error(err);
-    return res.status(500).json({ message: "SERVER_ERROR" });
+
+    return res.status(500).json({
+      message: "SERVER_ERROR",
+    });
+
   }
 };
 

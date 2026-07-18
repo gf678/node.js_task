@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { getBoards, getBoardByName } from "../services/board.service"; 
 import { Post } from "@prisma/client";
 import { prisma } from "../prisma";
+import bcrypt from "bcrypt";
 
 // 掲示板参照ハンドラーの型定義
 type BoardParams = {
@@ -120,48 +121,207 @@ export const getMySubscriptions = async (req: Request, res: Response) => {
 };
 
 // 掲示板情報の更新
-export const updateBoard = async (req: Request, res: Response) => {
-  // 掲示板ID、名前、説明をリクエストから抽出
-  const boardId = Number(req.params.boardId);
-  const name = String(req.body.name ?? "").trim();
-  const description = String(req.body.description ?? "").trim();
+/**
+ * 掲示板更新
+ * 名前・説明・ロック設定変更
+ */
+export const updateBoard = async (
+  req: Request,
+  res: Response
+) => {
+  try {
 
-  if (!Number.isInteger(boardId)) { // 掲示板IDが不正な場合は400エラーを返却
-    return res.status(400).json({ message: "INVALID_BOARD_ID" });
-  }
+    const boardId = Number(req.params.boardId);
 
-  if (!name) { // 掲示板名が入力されていない場合は400エラーを返却
-    return res.status(400).json({ message: "BOARD_NAME_REQUIRED" });
-  }
-  
-  // 掲示板名が50文字を超える場合は400エラーを返却
-  if (name.length > 50) {
-    return res.status(400).json({ message: "BOARD_NAME_TOO_LONG" });
-  }
-
-  // 掲示板の説明が255文字を超える場合は400エラーを返却
-  if (description.length > 255) {
-    return res.status(400).json({ message: "BOARD_DESCRIPTION_TOO_LONG" });
-  }
-  
-  // 更新対象の掲示板が存在するか確認
-  const existingBoard = await prisma.board.findUnique({
-    where: { boardId },
-  });
-
-  if (!existingBoard) { // 掲示板が存在しない場合は404エラーを返却
-    return res.status(404).json({ message: "BOARD_NOT_FOUND" });
-  }
-
-  // 掲示板IDで該当データを検索し、名前と説明を更新
-  const updatedBoard = await prisma.board.update({
-    where: { boardId },
-    data: {
+    const {
       name,
       description,
-    },
-  });
+      isProtected,
+      password,
+    } = req.body;
 
-  // 更新された掲示板情報をクライアントに返却
-  return res.json(updatedBoard);
+
+    // 掲示板存在確認
+    const board = await prisma.board.findUnique({
+      where: {
+        boardId,
+      },
+    });
+
+
+    if (!board) {
+      return res.status(404).json({
+        message: "BOARD_NOT_FOUND",
+      });
+    }
+
+
+    let passwordHash = board.passwordHash;
+
+
+    // ロック設定変更
+    if (isProtected) {
+
+      // 新しくロックする場合パスワード必須
+      if (!board.isProtected && !password) {
+        return res.status(400).json({
+          message: "PASSWORD_REQUIRED",
+        });
+      }
+
+
+      // パスワード変更
+      if (password) {
+        passwordHash = await bcrypt.hash(
+          password,
+          10
+        );
+      }
+
+    } else {
+
+      // ロック解除
+      passwordHash = null;
+
+    }
+
+
+    const updatedBoard = await prisma.board.update({
+      where: {
+        boardId,
+      },
+
+      data: {
+
+        name,
+
+        description,
+
+        isProtected: Boolean(isProtected),
+
+        passwordHash,
+
+        protectedAt: isProtected
+          ? (board.protectedAt ?? new Date())
+          : null,
+
+      },
+    });
+
+
+    return res.json(updatedBoard);
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      message:"SERVER_ERROR",
+    });
+
+  }
+};
+
+// 掲示板ロック解除ハンドラー
+export const unlockBoardHandler = async (
+  req: Request<BoardParams>,
+  res: Response
+) => {
+  try {
+    const { boardName } = req.params;
+
+    // authMiddlewareからユーザーID取得
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "UNAUTHORIZED",
+      });
+    }
+
+
+    // 掲示板取得
+    const board = await prisma.board.findUnique({
+      where: {
+        name: boardName,
+      },
+    });
+
+
+    if (!board) {
+      return res.status(404).json({
+        message: "BOARD_NOT_FOUND",
+      });
+    }
+
+
+    // ロックされていない場合
+    if (!board.isProtected) {
+      return res.status(400).json({
+        message: "BOARD_NOT_LOCKED",
+      });
+    }
+
+
+    // パスワードチェック
+    const password = req.body.password;
+
+    if (!password) {
+      return res.status(400).json({
+        message: "PASSWORD_REQUIRED",
+      });
+    }
+
+
+    const isMatch = await bcrypt.compare(
+      password,
+      board.passwordHash!
+    );
+
+
+    if (!isMatch) {
+      return res.status(403).json({
+        message: "INVALID_PASSWORD",
+      });
+    }
+
+
+    // すでにアクセス権があるか確認
+    const existingAccess = await prisma.boardAccess.findUnique({
+      where: {
+        boardId_userId: {
+          boardId: board.boardId,
+          userId,
+        },
+      },
+    });
+
+
+    if (!existingAccess) {
+
+      await prisma.boardAccess.create({
+        data: {
+          boardId: board.boardId,
+          userId,
+        },
+      });
+
+    }
+
+
+    return res.json({
+      message: "BOARD_UNLOCKED",
+    });
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      message: "SERVER_ERROR",
+    });
+
+  }
 };

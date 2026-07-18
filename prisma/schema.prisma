@@ -24,6 +24,25 @@ model Board {
   posts         Post[]
   members       BoardMember[]
   subscriptions Subscription[]
+
+  isProtected Boolean  @default(false)
+  passwordHash String?
+
+  protectedAt DateTime?
+  protectedBy Int?
+  accesses BoardAccess[]
+}
+
+model BoardAccess {
+  id Int @id @default(autoincrement())
+
+  boardId Int
+  userId Int
+
+  board Board @relation(fields: [boardId], references: [boardId], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
 }
 
 //BoardMember
@@ -186,6 +205,8 @@ model User {
   refreshTokens RefreshToken[]
   
   passwordResetToken PasswordResetToken?
+
+  accesses BoardAccess[]
 }
 
 model RefreshToken {
