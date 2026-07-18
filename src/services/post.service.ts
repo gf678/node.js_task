@@ -114,21 +114,51 @@ export const updatePost = async (
 };
 
 // 投稿の削除
+// 게시글 삭제
 export const deletePost = async (
   postId: number,
   loginId: string
 ) => {
-  // 投稿が存在するか確認
+
+  // 게시글 존재 확인
   const post = await prisma.post.findUnique({
-    where: { postId },
-    include: { user: true },
+    where: {
+      postId,
+    },
+    include: {
+      user: true,
+    },
   });
 
-  if (!post) throw new Error("POST_NOT_FOUND"); // 投稿が存在しない場合はエラーを投げます。
-  if (post.user.loginId !== loginId) throw new Error("FORBIDDEN"); // 作成者とログインユーザー가異なる場合はエラーを投げます。
 
-  // 投稿の削除
-  return prisma.post.delete({
-    where: { postId },
+  if (!post) {
+    throw new Error("POST_NOT_FOUND");
+  }
+
+
+  // 작성자 확인
+  if (post.user.loginId !== loginId) {
+    throw new Error("FORBIDDEN");
+  }
+
+
+  // 댓글 삭제 후 게시글 삭제
+  return prisma.$transaction(async (tx) => {
+
+    // 댓글 먼저 삭제 (FK 제약 해결)
+    await tx.comment.deleteMany({
+      where: {
+        postId,
+      },
+    });
+
+
+    // 게시글 삭제
+    return tx.post.delete({
+      where: {
+        postId,
+      },
+    });
+
   });
 };
