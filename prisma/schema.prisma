@@ -84,7 +84,7 @@ model Comment {
   userId Int
   parentId Int?
 
-  content String @db.VarChar(1000)
+  content String? @db.VarChar(1000)
   image String?
   isDeleted Boolean @default(false)
 
