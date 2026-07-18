@@ -15,21 +15,25 @@ datasource db {
 
 //BOARD
 model Board {
+
   boardId Int @id @default(autoincrement())
 
-  name        String   @unique
+  name String @unique
   description String?
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  posts         Post[]
-  members       BoardMember[]
+  posts Post[]
+
+  members BoardMember[]
   subscriptions Subscription[]
 
-  isProtected Boolean  @default(false)
+  isProtected Boolean @default(false)
+
   passwordHash String?
 
   protectedAt DateTime?
   protectedBy Int?
+
   accesses BoardAccess[]
 }
 
@@ -122,26 +126,28 @@ model PasswordResetToken {
 model Post {
   postId Int @id @default(autoincrement())
 
-  userId  Int
+  userId Int
   boardId Int
 
-  title   String  @db.VarChar(200)
+  title String @db.VarChar(200)
   content String? @db.Text
 
-  views    Int @default(0)
-  likes    Int @default(0)
+  views Int @default(0)
+  likes Int @default(0)
   dislikes Int @default(0)
 
   createdAt DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id])
-  board Board @relation(fields: [boardId], references: [boardId])
 
-  comments  Comment[]
+  user User @relation(fields: [userId], references: [id])
+
+  board Board @relation(fields: [boardId], references: [boardId], onDelete: Cascade)
+
+
+  comments Comment[]
   reactions PostReaction[]
-  images    Image[]
-
-  files File[] 
+  images Image[]
+  files File[]
 }
 
 //PostReaction

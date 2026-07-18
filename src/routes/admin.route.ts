@@ -5,7 +5,9 @@ import {
   searchUsers,
   updateUserRole,
 } from "../controllers/admin.controller";
-import { updateBoard } from "../controllers/board.controller";
+import { 
+        updateBoard,
+        deleteBoard} from "../controllers/board.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { adminMiddleware } from "../middleware/admin.middleware";
 const router = express.Router();
@@ -38,6 +40,12 @@ router.put(
   updateBoard
 );
 
+router.delete(
+  "/boards/:boardId",
+  authMiddleware,
+  adminMiddleware,
+  deleteBoard
+);
 
 // ユーザー検索
 router.get(

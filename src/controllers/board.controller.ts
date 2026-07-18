@@ -129,6 +129,7 @@ export const updateBoard = async (
   req: Request,
   res: Response
 ) => {
+
   try {
 
     const boardId = Number(req.params.boardId);
@@ -141,86 +142,160 @@ export const updateBoard = async (
     } = req.body;
 
 
-    // 掲示板存在確認
+    const protect = isProtected === true;
+
+
     const board = await prisma.board.findUnique({
-      where: {
+      where:{
         boardId,
       },
     });
 
 
-    if (!board) {
+    if(!board){
+
       return res.status(404).json({
-        message: "BOARD_NOT_FOUND",
+        message:"BOARD_NOT_FOUND",
       });
+
     }
 
 
     let passwordHash = board.passwordHash;
 
 
-    // ロック設定変更
-    if (isProtected) {
+    // 🔒 보호 게시판 설정
+    if(protect){
 
-      // 新しくロックする場合パスワード必須
-      if (!board.isProtected && !password) {
+
+      // 공개 → 보호 변경인데 비밀번호 없음
+      if(!board.isProtected && !password){
+
         return res.status(400).json({
-          message: "PASSWORD_REQUIRED",
+          message:"PASSWORD_REQUIRED",
         });
+
       }
 
 
-      // パスワード変更
-      if (password) {
+      // 비밀번호 변경
+      if(password){
+
         passwordHash = await bcrypt.hash(
           password,
           10
         );
+
       }
 
-    } else {
 
-      // ロック解除
+    }else{
+
+
+      // 보호 해제
       passwordHash = null;
+
 
     }
 
 
+
     const updatedBoard = await prisma.board.update({
-      where: {
+
+      where:{
         boardId,
       },
 
-      data: {
+
+      data:{
 
         name,
 
         description,
 
-        isProtected: Boolean(isProtected),
+
+        isProtected:protect,
+
 
         passwordHash,
 
-        protectedAt: isProtected
-          ? (board.protectedAt ?? new Date())
+
+        protectedAt:protect
+          ? board.protectedAt ?? new Date()
           : null,
 
       },
+
     });
 
 
     return res.json(updatedBoard);
 
 
-  } catch (err) {
+  }catch(err){
 
     console.error(err);
+
 
     return res.status(500).json({
       message:"SERVER_ERROR",
     });
 
   }
+
+};
+
+export const deleteBoard = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const boardId = Number(req.params.boardId);
+
+
+    const board = await prisma.board.findUnique({
+      where:{
+        boardId,
+      },
+    });
+
+
+    if(!board){
+
+      return res.status(404).json({
+        message:"BOARD_NOT_FOUND",
+      });
+
+    }
+
+
+    await prisma.board.delete({
+
+      where:{
+        boardId,
+      },
+
+    });
+
+
+    return res.json({
+      message:"BOARD_DELETED",
+    });
+
+
+  } catch(err){
+
+    console.error(err);
+
+
+    return res.status(500).json({
+      message:"SERVER_ERROR",
+    });
+
+  }
+
 };
 
 // 掲示板ロック解除ハンドラー
