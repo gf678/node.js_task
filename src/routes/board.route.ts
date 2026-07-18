@@ -42,4 +42,5 @@ router.post(
   checkBoardPassword
 );
 
+
 export default router;

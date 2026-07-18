@@ -415,6 +415,9 @@ export const checkBoardPassword = async (
   } = req.body;
 
 
+  const user = req.user;
+
+
   const board = await prisma.board.findUnique({
     where:{
       boardId
@@ -462,6 +465,30 @@ export const checkBoardPassword = async (
     });
 
   }
+
+
+
+  // ⭐ 추가
+  // 비밀번호 인증 성공 기록
+
+  await prisma.boardAccess.upsert({
+
+    where:{
+      boardId_userId:{
+        boardId,
+        userId:user.id
+      }
+    },
+
+    update:{},
+
+    create:{
+      boardId,
+      userId:user.id
+    }
+
+  });
+
 
 
   return res.json({
