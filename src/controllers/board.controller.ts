@@ -400,3 +400,83 @@ export const unlockBoardHandler = async (
 
   }
 };
+
+export const checkBoardPassword = async (
+  req:Request,
+  res:Response
+)=>{
+
+ try{
+
+  const boardId = Number(req.params.boardId);
+
+  const {
+    password
+  } = req.body;
+
+
+  const board = await prisma.board.findUnique({
+    where:{
+      boardId
+    }
+  });
+
+
+  if(!board){
+    return res.status(404).json({
+      message:"BOARD_NOT_FOUND"
+    });
+  }
+
+
+  // 공개 게시판
+  if(!board.isProtected){
+
+    return res.json({
+      success:true
+    });
+
+  }
+
+
+  if(!password){
+
+    return res.status(400).json({
+      message:"PASSWORD_REQUIRED"
+    });
+
+  }
+
+
+  const valid =
+    await bcrypt.compare(
+      password,
+      board.passwordHash!
+    );
+
+
+  if(!valid){
+
+    return res.status(401).json({
+      message:"INVALID_PASSWORD"
+    });
+
+  }
+
+
+  return res.json({
+    success:true
+  });
+
+
+ }catch(err){
+
+  console.error(err);
+
+  res.status(500).json({
+    message:"SERVER_ERROR"
+  });
+
+ }
+
+};

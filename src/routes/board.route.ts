@@ -3,6 +3,7 @@ import {
   getBoardsHandler,
   getBoardByNameHandler,
   unlockBoardHandler,
+  checkBoardPassword
 } from "../controllers/board.controller";
 
 import { authMiddleware } from "../middleware/auth.middleware";
@@ -35,5 +36,10 @@ router.get(
   getBoardByNameHandler
 );
 
+router.post(
+  "/:boardId/access",
+  authMiddleware,
+  checkBoardPassword
+);
 
 export default router;
