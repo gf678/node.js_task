@@ -6,13 +6,17 @@ import {
   updateUserRole,
 } from "../controllers/admin.controller";
 import { updateBoard } from "../controllers/board.controller";
-
+import { authMiddleware } from "../middleware/auth.middleware";
+import { adminMiddleware } from "../middleware/admin.middleware";
 const router = express.Router();
 
 
 // 管理者ダッシュボード
+// 管理者ダッシュボード
 router.get(
   "/boards",
+  authMiddleware,
+  adminMiddleware,
   getAdminDashboard
 );
 
@@ -20,13 +24,17 @@ router.get(
 // 掲示板作成
 router.post(
   "/boards",
+  authMiddleware,
+  adminMiddleware,
   createBoard
 );
 
 
-// 掲示板修正（ロック設定含む）
+// 掲示板修正
 router.put(
   "/boards/:boardId",
+  authMiddleware,
+  adminMiddleware,
   updateBoard
 );
 
@@ -34,6 +42,8 @@ router.put(
 // ユーザー検索
 router.get(
   "/users/search",
+  authMiddleware,
+  adminMiddleware,
   searchUsers
 );
 
@@ -41,6 +51,8 @@ router.get(
 // ユーザー権限変更
 router.post(
   "/users/role",
+  authMiddleware,
+  adminMiddleware,
   updateUserRole
 );
 
