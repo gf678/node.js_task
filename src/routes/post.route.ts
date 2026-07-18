@@ -30,7 +30,12 @@ router.post("/:postId/reaction", authMiddleware, reactionHandler);
 router.get("/:boardName/:postId", authMiddleware, getPostDetailHandler);
 
 // 投稿の修正
-router.put("/:postId", authMiddleware, updatePostHandler);
+router.put(
+  "/:postId",
+  authMiddleware,
+  upload.array("files"),
+  updatePostHandler
+);
 
 // 投稿の削除
 router.delete("/:postId", authMiddleware, deletePostHandler);
