@@ -480,7 +480,9 @@ export const checkBoardPassword = async (
       }
     },
 
-    update:{},
+    update:{
+      createdAt:new Date()
+    },
 
     create:{
       boardId,
