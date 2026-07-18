@@ -30,15 +30,25 @@ export const getBoardByNameHandler = async (
   req: Request<BoardParams>,
   res: Response
 ) => {
-  // リクエストから掲示板名を抽出
+
   const { boardName } = req.params;
-  // 掲示板名で該当する掲示板と投稿をデータベースから取得
-  const board = await getBoardByName(boardName);
-  // 該当する掲示板が存在しない場合は404エラーを返却
+
+  const userId = req.user?.id;
+
+
+  const board = await getBoardByName(
+    boardName,
+    userId
+  );
+
+
   if (!board) {
-    return res.status(404).json({ message: "NOT_FOUND" });
+    return res.status(404).json({
+      message:"NOT_FOUND"
+    });
   }
-  // 取得した掲示板と投稿をクライアントに返却
+
+
   res.json(board);
 };
 
