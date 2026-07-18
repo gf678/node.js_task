@@ -36,6 +36,10 @@ export const boardAccessMiddleware = async (
   }
   const userId = (req as any).user?.id;
 
+  if(user?.role === "ADMIN"){
+    return next();
+  }
+
   if (!userId) {
     return res.status(401).json({
       message: "UNAUTHORIZED",

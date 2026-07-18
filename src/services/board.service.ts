@@ -46,34 +46,25 @@ export const getBoardByName = async (
 
   if(board.isProtected){
 
-    // 로그인 안 한 경우
     if(!userId){
-      return {
-        ...board,
-        posts:[]
-      };
+      throw new Error("BOARD_LOCKED");
     }
 
 
     const access = await prisma.boardAccess.findUnique({
       where:{
         boardId_userId:{
-          boardId: board.boardId,
-          userId: userId
+          boardId:board.boardId,
+          userId
         }
       }
     });
 
 
     if(!access){
-      return {
-        ...board,
-        posts:[]
-      };
+      throw new Error("BOARD_LOCKED");
     }
-
   }
-
 
   return board;
 };

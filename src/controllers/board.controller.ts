@@ -36,20 +36,40 @@ export const getBoardByNameHandler = async (
   const userId = req.user?.id;
 
 
-  const board = await getBoardByName(
-    boardName,
-    userId
-  );
+  try{
+
+    const board = await getBoardByName(
+      boardName,
+      userId
+    );
 
 
-  if (!board) {
+    if (!board) {
     return res.status(404).json({
       message:"NOT_FOUND"
     });
-  }
+    }
 
 
-  res.json(board);
+    return res.json(board);
+
+
+    }catch(err:any){
+
+    if(err.message==="BOARD_LOCKED"){
+      return res.status(403).json({
+        message:"BOARD_LOCKED"
+      });
+    }
+
+
+    console.error(err);
+
+    return res.status(500).json({
+      message:"SERVER_ERROR"
+    });
+
+    }
 };
 
 // 掲示板の購読・解除切り替え
@@ -473,12 +493,8 @@ export const checkBoardPassword = async (
     });
 
   }
-
-
-
   // ⭐ 추가
   // 비밀번호 인증 성공 기록
-
   await prisma.boardAccess.upsert({
     where:{
       boardId_userId:{
@@ -486,9 +502,11 @@ export const checkBoardPassword = async (
         userId:user.id
       }
     },
+
     update:{
       createdAt:new Date()
     },
+
     create:{
       boardId,
       userId:user.id
