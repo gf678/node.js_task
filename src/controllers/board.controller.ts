@@ -363,12 +363,10 @@ export const unlockBoardHandler = async (
 
 
     // すでにアクセス権があるか確認
-    const existingAccess = await prisma.boardAccess.findUnique({
-      where: {
-        boardId_userId: {
-          boardId: board.boardId,
-          userId,
-        },
+    const existingAccess = await prisma.boardAccess.findFirst({
+      where:{
+        boardId: board.boardId,
+        userId,
       },
     });
 
@@ -472,26 +470,20 @@ export const checkBoardPassword = async (
   // 비밀번호 인증 성공 기록
 
   await prisma.boardAccess.upsert({
-
     where:{
       boardId_userId:{
         boardId,
         userId:user.id
       }
     },
-
     update:{
       createdAt:new Date()
     },
-
     create:{
       boardId,
       userId:user.id
     }
-
   });
-
-
 
   return res.json({
     success:true

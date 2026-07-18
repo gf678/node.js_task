@@ -38,12 +38,10 @@ export const boardAccessMiddleware = async (
     });
   }
 
-  const access = await prisma.boardAccess.findUnique({
-    where: {
-      boardId_userId: {
-        boardId: board.boardId,
-        userId,
-      },
+  const access = await prisma.boardAccess.findFirst({
+    where:{
+      boardId: board.boardId,
+      userId,
     },
   });
 
