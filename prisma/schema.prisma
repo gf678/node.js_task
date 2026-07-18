@@ -84,19 +84,30 @@ model Comment {
   userId   Int
   parentId Int?
 
-  content   String  @db.VarChar(1000)
+  content String @db.VarChar(1000)
+
+  // 댓글 이미지
+  image String?
+
   isDeleted Boolean @default(false)
 
   createdAt DateTime @default(now())
 
-  post Post @relation(fields: [postId], references: [postId])
-  user User @relation(fields: [userId], references: [id])
 
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [commentId])
+  post Post @relation(fields:[postId],references:[postId])
+
+  user User @relation(fields:[userId],references:[id])
+
+
+  // 대댓글
+  parent Comment? @relation("CommentReplies",fields:[parentId],references:[commentId])
+
   replies Comment[] @relation("CommentReplies")
+
 
   @@index([postId])
   @@index([userId])
+  @@index([parentId])
 }
 
 //IMAGE
